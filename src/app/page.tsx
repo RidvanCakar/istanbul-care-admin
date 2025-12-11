@@ -173,7 +173,7 @@ export default function PageBuilder() {
     setPageSettings((prev) => ({ ...prev, ...updates }));
   };
 
-// --- KAYDETME VE İNDİRME İŞLEMİ ---
+  // --- KAYDETME VE İNDİRME İŞLEMİ ---
   const handleSave = () => {
     // 1. Veriyi Backend formatına çevir
     const formattedData = transformToBackendFormat(
@@ -253,6 +253,7 @@ export default function PageBuilder() {
 
   return (
     <DndContext 
+      id="builder-dnd-context" // <--- İŞTE ÇÖZÜM: Sabit bir ID verdik
       sensors={sensors} 
       collisionDetection={closestCenter} 
       onDragStart={handleDragStart} 
