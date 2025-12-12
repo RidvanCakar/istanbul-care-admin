@@ -31,36 +31,65 @@ export default function SortableCanvasItem({ item, onRemove, onUpdate }: Sortabl
     zIndex: isDragging ? 999 : 1,
   };
 
-  // --- 1. API BAĞLANTISI ---
   const endpoint = getEndpointByType(item.type);
   const { data, isLoading } = useSWR(endpoint, fetcher);
 
-  // --- VERİYİ AYIKLAMA (YENİ AKILLI KOD) ---
+  // --- 1. VERİYİ AYIKLAMA (DATA PARSER) ---
   let options: any[] = [];
 
   if (data) {
-    // Senaryo A: Backend direkt array dönmüştür (Nadir)
     if (Array.isArray(data)) {
       options = data;
-    }
-    // Senaryo B: Backend { data: [...] } dönmüştür
-    else if (data.data && Array.isArray(data.data)) {
+    } else if (data.data && Array.isArray(data.data)) {
       options = data.data;
-    }
-    // Senaryo C: (SENİN DURUMUN) Backend { data: { heroes: [...], total: 10 } } dönmüştür.
-    // Çözüm: data.data içindeki anahtarlara bak, Array olanı bul.
-    else if (data.data && typeof data.data === 'object') {
+    } else if (data.data && typeof data.data === 'object') {
+       // data.data içinde array olan ilk anahtarı bul (heroes, cards, users...)
        const keys = Object.keys(data.data);
-       // İçindeki değerlerden "Array" olan ilkini bul (heroes, cards, blogs...)
        const arrayKey = keys.find(key => Array.isArray(data.data[key]));
-       
        if (arrayKey) {
          options = data.data[arrayKey];
        }
     }
   }
 
-  // --- 2. GENİŞLİK HESABI ---
+  // --- 2. YARDIMCI: GELİŞMİŞ ETİKET OLUŞTURUCU 🏷️ ---
+  const getLabel = (opt: any) => {
+    // A. KULLANICILAR (Users)
+    // Örnek: "Rıdvan (ridvan@gmail.com)"
+    if (opt.full_name) {
+       return `${opt.full_name} (${opt.email || opt.role})`;
+    }
+
+    // B. ÇEVİRİLİ İÇERİKLER (Hero, Card, Blog, Service)
+    // Veri 'translations' dizisi içindeyse:
+    if (opt.translations && Array.isArray(opt.translations) && opt.translations.length > 0) {
+        const tr = opt.translations[0]; // İlk dili (varsayılan) al
+        
+        // Başlığı yakala
+        const label = tr.title || tr.name || tr.question;
+        
+        if (label) {
+            // EKSTRA BİLGİLER:
+            // Eğer bu bir Kart (Card) ise ve 'type' bilgisi varsa yanına ekle.
+            // Örnek: "Yaz Kampanyası (default)"
+            if (opt.type && typeof opt.type === 'string') {
+                 return `${label} (${opt.type})`;
+            }
+            // Varsayılan: "Başlık (ID: 5)"
+            return `${label} (ID: ${opt.id})`;
+        }
+    }
+
+    // C. STANDART (Eski Tip veya Düz Veri)
+    if (opt.title) return opt.title;
+    if (opt.name) return opt.name;
+    if (opt.question) return opt.question; 
+    
+    // D. HİÇBİRİ YOKSA
+    return `Kayıt #${opt.id}`;
+  };
+
+  // --- 3. GENİŞLİK HESABI ---
   const widthClass = {
     12: 'w-full',
     6: 'w-[49%]',
@@ -100,7 +129,6 @@ export default function SortableCanvasItem({ item, onRemove, onUpdate }: Sortabl
         </div>
 
         <div className="flex items-center gap-2">
-          {/* Grid Seçici */}
           <div className="relative group/grid bg-white border border-gray-200 rounded px-2 py-1 flex items-center gap-2 h-7">
             <Columns className="w-3 h-3 text-gray-400" />
             <select
@@ -130,7 +158,6 @@ export default function SortableCanvasItem({ item, onRemove, onUpdate }: Sortabl
       {/* --- İÇERİK --- */}
       <div className="p-4 bg-white space-y-3">
           
-          {/* İÇERİK SEÇİM MENÜSÜ */}
           <div className="relative">
              <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
                 <Link2 className="w-4 h-4" />
@@ -150,11 +177,10 @@ export default function SortableCanvasItem({ item, onRemove, onUpdate }: Sortabl
                   {isLoading ? "Yükleniyor..." : "-- Bir İçerik Seçin --"}
                 </option>
                 
-                {/* Listeyi Basıyoruz */}
                 {options?.map((opt: any) => (
                   <option key={opt.id} value={opt.id}>
-                    {/* Backend 'title' mı 'name' mi 'question' mı dönüyor hepsini deniyoruz */}
-                    {opt.title || opt.name || opt.question || `Kayıt #${opt.id}`} 
+                    {/* YENİ ETİKET FONKSİYONU DEVREDE */}
+                    {getLabel(opt)}
                   </option>
                 ))}
              </select>
@@ -164,7 +190,6 @@ export default function SortableCanvasItem({ item, onRemove, onUpdate }: Sortabl
              </div>
           </div>
 
-          {/* Görsel Önizleme */}
           <div className={`transition-opacity duration-300 ${!item.dbId ? 'opacity-40 grayscale' : 'opacity-100'}`}>
               <ContentBlockPreview type={item.type} />
           </div>

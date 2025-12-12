@@ -27,11 +27,11 @@ export const transformToBackendFormat = (
     cards: [],
     processes: [],
     before_afters: [],
-    contact_forms: [],
-    blogs: [],        // Artık Dizi
-    services: [],     // Artık Dizi
-    social_media: [], // Artık Dizi
-    reviews: [],      // Artık Dizi
+    contact_form: [],
+    blogs: [],        
+    services: [],     
+    social_media: [], 
+    reviews: [],      
   };
 
   items.forEach((item, index) => {
@@ -65,8 +65,6 @@ export const transformToBackendFormat = (
       case 'contact_form':
         payload.contact_forms.push(backendItem);
         break;
-
-      // ARTIK BUNLARI DA 'PUSH' İLE EKLİYORUZ (ÇOKLU DESTEK)
       case 'blog':
         payload.blogs.push(enabledItem);
         break;

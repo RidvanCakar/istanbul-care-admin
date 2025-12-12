@@ -13,17 +13,15 @@ export interface PageData {
   language_id: number;
   header_id: number;
   parent_id: number;
-  footer_id: number; // Bunu da ekledik
+  footer_id: number; 
   
   // --- Standart Listeler ---
   heroes: ComponentItem[];
   cards: ComponentItem[];
   before_afters: ComponentItem[];
-  processes: ComponentItem[];     // Eklendi
-  contact_forms: ComponentItem[]; // Eklendi
-  
-  // --- Artık Bunlar da LİSTE (Array) Oldu ---
-  // Eskiden SingleComponentItem idi, şimdi [] oldu
+  processes: ComponentItem[];     
+  contact_forms: ComponentItem[];
+  users: ComponentItem[];
   blogs: ComponentItemWithEnabled[];
   services: ComponentItemWithEnabled[];
   social_media: ComponentItemWithEnabled[];
@@ -51,16 +49,19 @@ export type ComponentType =
   | 'process' 
   | 'before_after' 
   | 'contact_form' 
+  | 'user'
   | 'blog' 
+  | 'tag'
   | 'service' 
   | 'social_media' 
   | 'review';
 
+
 export interface BuilderStateItem {
-  id: string; // Frontend için UUID
+  id: string; 
   type: ComponentType;
   grid_columns: GridSize;
   order: number;
   dbId?: number;
-  // isSingle?: boolean; // Artık buna ihtiyacımız kalmadı çünkü hepsi çoklu oldu
+  // isSingle?: boolean;
 }

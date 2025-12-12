@@ -1,26 +1,32 @@
 // src/services/api.ts
 
-// 1. BASE URL (Proxy üzerinden çıkıyoruz)
-export const API_BASE_URL = "/api/proxy"; 
+// 1. BASE URL 
+export const API_BASE_URL = "https://api.istanbul-care.com"; 
 
-// 2. Endpointler (Proxy /v1/admin kısmını zaten hallediyor, sadece ismini yazıyoruz)
+// 2. Endpoint Haritası
 const ENDPOINT_MAP: Record<string, string> = {
-  hero: "/heroes",         
-  card: "/cards",
-  process: "/processes",
-  contact_form: "/contact-forms",
-  blog: "/blogs",
-  service: "/services",
-  social_media: "/social-medias", 
-  review: "/reviews",
-  before_after: "/before-afters"
+  // Eski endpointler 
+  hero: "/v1/admin/heroes",         
+  card: "/v1/admin/cards",
+  process: "/v1/admin/processes",
+  contact_form: "/v1/admin/contact-form",
+  blog: "/v1/admin/blogs",
+  tag: "/v1/admin/tags",
+  service: "/v1/admin/services",
+  social_media: "/v1/admin/social-medias", 
+  review: "/v1/admin/reviews",
+  before_after: "/v1/admin/before-afters",
+  user: "/v1/admin/users" 
 };
 
 export const fetcher = async (url: string) => {
-  // 3. KOPYALADIĞIN TOKEN'I BURAYA YAPIŞTIR 👇 (Bearer olmadan, sadece eyJ... kısmı)
-  const token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJyaWR2YW5jYWthcjdAZ21haWwuY29tIiwiZXhwIjoxNzY1NTI5NTEwfQ.ZhliWgf2D2rTOm06wNl-1qePMNwgD99jLSNwUzSeXHU"; 
+  const token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJyaWR2YW5jYWthcjdAZ21haWwuY29tIiwiZXhwIjoxNzY1NjE1NDM3fQ._rqsDnHnCX2zjNCavJQgsdYGNekySGuBhfSNxO7ITII"; 
 
-  const res = await fetch(`${API_BASE_URL}${url}`, {
+  // URL birleştirme
+  const fullUrl = `${API_BASE_URL}${url}`;
+
+  console.log("İstek Atılıyor:", fullUrl); 
+  const res = await fetch(fullUrl, {
     headers: {
       "Content-Type": "application/json",
       "Authorization": `Bearer ${token}` 
@@ -28,7 +34,7 @@ export const fetcher = async (url: string) => {
   });
 
   if (!res.ok) {
-    console.error("API Hatası:", res.status, await res.text());
+    console.error(`API Hatası (${res.status}):`, await res.text());
     throw new Error("API Hatası");
   }
 
@@ -38,3 +44,5 @@ export const fetcher = async (url: string) => {
 export const getEndpointByType = (type: string) => {
   return ENDPOINT_MAP[type] || null;
 };
+
+//eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJyaWR2YW5jYWthcjdAZ21haWwuY29tIiwiZXhwIjoxNzY1NjE1NDM3fQ._rqsDnHnCX2zjNCavJQgsdYGNekySGuBhfSNxO7ITII

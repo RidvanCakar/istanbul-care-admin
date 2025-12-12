@@ -9,7 +9,9 @@ import {
   FileText, 
   Briefcase, 
   Share2, 
-  Star 
+  Star,
+  Users,
+  Tag // <--- 1. İkon eklendi
 } from "lucide-react";
 
 export const TOOLS: { id: ComponentType; label: string; icon: any }[] = [
@@ -22,4 +24,6 @@ export const TOOLS: { id: ComponentType; label: string; icon: any }[] = [
   { id: 'service', label: 'Services', icon: Briefcase },
   { id: 'social_media', label: 'Social Media', icon: Share2 },
   { id: 'review', label: 'Review', icon: Star },
+  { id: 'user', label: 'Users (Test)', icon: Users },
+    { id: 'tag', label: 'Tags (Etiketler)', icon: Tag },
 ];
