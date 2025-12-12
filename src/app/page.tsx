@@ -35,7 +35,7 @@ import { TOOLS } from "@/data/tools";
 import { transformToBackendFormat } from "@/utils/dataTransformer";
 
 // ----------------------------------------------------------------
-// 1. KANVAS BİLEŞENİ
+// 1. KANVAS BİLEŞENİ (GÖRSEL GÜNCELLEME BURADA YAPILDI)
 // ----------------------------------------------------------------
 interface BuilderCanvasProps {
   items: BuilderStateItem[];
@@ -64,11 +64,19 @@ function BuilderCanvas({
   return (
     <div
       ref={setNodeRef}
-      className={`flex-1 overflow-y-auto p-8 transition-colors ${
-        isOver ? "bg-blue-50/50" : "bg-gray-50"
+      className={`flex-1 overflow-y-auto p-8 transition-colors relative ${
+        isOver ? "bg-blue-50/30" : "bg-[#F9FAFB]"
       }`}
     >
-      <div className="max-w-4xl mx-auto min-h-[600px] flex flex-col gap-4 pb-20">
+      {/* --- YENİ EKLENEN: NOKTALI BACKGROUND DESENİ --- */}
+      <div className="absolute inset-0 pointer-events-none z-0 opacity-[0.4]"
+           style={{
+             backgroundImage: 'radial-gradient(#cbd5e1 1px, transparent 1px)',
+             backgroundSize: '24px 24px'
+           }}
+      />
+
+      <div className="max-w-4xl mx-auto min-h-[600px] flex flex-col gap-6 pb-20 relative z-10">
         
         {/* SABİT HEADER */}
         <FixedZone 
@@ -78,11 +86,15 @@ function BuilderCanvas({
         />
 
         {/* DİNAMİK İÇERİK ALANI */}
-        <div className="flex-1 space-y-3 min-h-[200px]">
+        <div className="flex-1 space-y-4 min-h-[200px]">
           {items.length === 0 ? (
-            <div className="border-2 border-dashed border-gray-300 rounded-xl p-12 flex flex-col items-center justify-center text-gray-400 bg-white h-48">
-               <p className="text-lg font-medium">İçerik bileşenlerini buraya sürükleyin</p>
-               <p className="text-sm mt-2">veya sol menüden (+) butonuna basın</p>
+            // YENİ MODERN BOŞ DURUM TASARIMI
+            <div className="border-2 border-dashed border-gray-300 rounded-xl p-16 flex flex-col items-center justify-center text-gray-400 bg-white/50 backdrop-blur-sm hover:border-blue-400 hover:text-blue-500 transition-all cursor-default">
+               <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mb-4">
+                  <svg className="w-8 h-8 opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 4v16m8-8H4" /></svg>
+               </div>
+               <p className="text-lg font-medium">Sahne Boş</p>
+               <p className="text-sm opacity-60 mt-1">Soldan bir bileşen sürükleyip buraya bırakın</p>
             </div>
           ) : (
             <SortableContext 

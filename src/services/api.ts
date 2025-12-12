@@ -16,7 +16,7 @@ const ENDPOINT_MAP: Record<string, string> = {
   social_media: "/v1/admin/social-medias", 
   review: "/v1/admin/reviews",
   before_after: "/v1/admin/before-afters",
-  user: "/v1/admin/users" 
+  user: "/v1/admin/users",
 };
 
 export const fetcher = async (url: string) => {
@@ -46,3 +46,44 @@ export const getEndpointByType = (type: string) => {
 };
 
 //eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJyaWR2YW5jYWthcjdAZ21haWwuY29tIiwiZXhwIjoxNzY1NjE1NDM3fQ._rqsDnHnCX2zjNCavJQgsdYGNekySGuBhfSNxO7ITII
+
+
+
+export const createEntry = async (type: string, payload: any) => {
+  const url = ENDPOINT_MAP[type];
+  if (!url) throw new Error("Bu tip için endpoint bulunamadı");
+
+  const fullUrl = `${API_BASE_URL}${url}`;
+
+  const res = await fetch(fullUrl, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJyaWR2YW5jYWthcjdAZ21haWwuY29tIiwiZXhwIjoxNzY1NTQ5NzI3fQ.ep_3bzTOfk0PVkfs-d9dPK9i7UJ3c9oU2zetct5Vih8"
+    },
+    body: JSON.stringify(payload)
+  });
+
+  if (!res.ok) {
+    const errorData = await res.json();
+    
+    let errorMessage = "Kayıt oluşturulamadı";
+    
+    if (errorData.detail) {
+      if (Array.isArray(errorData.detail)) {
+        // Eğer hata bir liste ise (Örn: Phone eksik, Password kısa)
+        errorMessage = errorData.detail
+          .map((err: any) => `${err.loc?.[1] || 'Alan'}: ${err.msg}`)
+          .join('\n');
+      } else {
+        // Tekil mesajsa
+        errorMessage = errorData.detail;
+      }
+    }
+    
+    console.error("API Hatası Detay:", errorData); // Konsola da bas
+    throw new Error(errorMessage);
+  }
+
+  return res.json();
+};
