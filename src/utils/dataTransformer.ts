@@ -1,14 +1,16 @@
 // src/utils/dataTransformer.ts
-import { BuilderStateItem, PageData } from "@/types";
+import { BuilderStateItem, BackendPagePayload, PageData, BackendComponentItem } from "@/types";
 
 export const transformToBackendFormat = (
   items: BuilderStateItem[],
-  pageSettings: Partial<PageData>,
+  pageSettings: PageData,
   headerId: number,
   footerId: number
-) => {
-  const payload: any = {
-    // Sayfa Ayarları
+): BackendPagePayload => {
+  
+  // 1. Boş Şablonu Hazırla
+  const payload: BackendPagePayload = {
+    // --- Metadata (Root Seviyesi) ---
     title: pageSettings.title || "Adsız Sayfa",
     slug: pageSettings.slug || "",
     excerpt: pageSettings.excerpt || "",
@@ -17,65 +19,76 @@ export const transformToBackendFormat = (
     focus_keyword: pageSettings.focus_keyword || "",
     robots_index: pageSettings.robots_index ?? true,
     robots_follow: pageSettings.robots_follow ?? true,
-    language_id: 1,
-    header_id: headerId,
-    parent_id: 0,
-    footer_id: footerId,
 
-    // TÜM ALANLAR ARTIK BOŞ DİZİ OLARAK BAŞLIYOR
+    language_id: 1, 
+    header_id: headerId || 0,
+    footer_id: footerId || 0,
+    parent_id: 0,
+    faq_style: pageSettings.faq_style || "default_faq",
+
+    // --- Standart Listeler (Boş Dizi Başlat) ---
     heroes: [],
     cards: [],
     processes: [],
     before_afters: [],
-    contact_form: [],
-    blogs: [],        
-    services: [],     
-    social_media: [], 
-    reviews: [],      
+    contact_forms: [],
+    promotional_landings: [],
+
+    blogs: { enabled: false, order: 0, grid_columns: 12 },
+    services: { enabled: false, order: 0, grid_columns: 12 },
+    social_media: { enabled: false, order: 0, grid_columns: 12 },
+    reviews: { enabled: false, order: 0, grid_columns: 12 },
   };
 
+  // 2. Listeyi Dönüştür
   items.forEach((item, index) => {
-    // Standart Veri
-    const backendItem = {
-      id: 0, 
-      order: index + 1, // Sıralama (Hepsi için ortak sayaç)
+    const dbId = item.dbId;
+    
+    // Standart öğe yapısı (Hero, Card vb. için)
+    const componentItem: BackendComponentItem = {
+      id: dbId || 0,
+      order: index, // Listedeki sırası
       grid_columns: item.grid_columns
     };
 
-    // 'enabled: true' eklenmiş veri (Blog, Social Media vb. için)
-    const enabledItem = {
+    // Config öğe yapısı (Blog, Service vb. için)
+    const configItem = {
       enabled: true,
-      ...backendItem
+      order: index,
+      grid_columns: item.grid_columns
     };
 
     switch (item.type) {
-      // Standart Olanlar
+      // --- GRUP A: Standart Listeler (Obje Dizisine Pushla) ---
       case 'hero':
-        payload.heroes.push(backendItem);
+        if (dbId) payload.heroes.push(componentItem);
         break;
       case 'card':
-        payload.cards.push(backendItem);
+        if (dbId) payload.cards.push(componentItem);
         break;
       case 'process':
-        payload.processes.push(backendItem);
+        if (dbId) payload.processes.push(componentItem);
         break;
       case 'before_after':
-        payload.before_afters.push(backendItem);
+        if (dbId) payload.before_afters.push(componentItem);
         break;
       case 'contact_form':
-        payload.contact_forms.push(backendItem);
+        if (dbId) payload.contact_forms.push(componentItem);
+        break;
+      case 'promotional_landing':
+        if (dbId) payload.promotional_landings.push(componentItem);
         break;
       case 'blog':
-        payload.blogs.push(enabledItem);
+        payload.blogs = configItem;
         break;
       case 'service':
-        payload.services.push(enabledItem);
+        payload.services = configItem;
         break;
       case 'social_media':
-        payload.social_media.push(enabledItem);
+        payload.social_media = configItem;
         break;
       case 'review':
-        payload.reviews.push(enabledItem);
+        payload.reviews = configItem;
         break;
     }
   });

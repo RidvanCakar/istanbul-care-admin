@@ -7,14 +7,14 @@ import {
   Search, 
   UserCircle, 
   Facebook, 
-  Linkedin, // Twitter yerine Linkedin eklendi
+  Linkedin, 
   Instagram, 
   Copyright 
 } from 'lucide-react';
 
 interface FixedZoneProps {
   type: 'Header' | 'Footer';
-  selectedId?: number; // 0: Standart, 1: Minimal/Centered, 2: Dark
+  selectedId?: number; 
   onChange?: (id: number) => void;
 }
 

@@ -3,33 +3,38 @@
 // 1. BASE URL 
 export const API_BASE_URL = "https://api.istanbul-care.com"; 
 
-// 2. Endpoint Haritası
+// GÜNCEL TOKEN 
+const AUTH_TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJyaWR2YW5jYWthcjdAZ21haWwuY29tIiwiZXhwIjoxNzY1ODg0Njg1fQ.mFzXBXb7nOdu3GVwK7D5rqvgHr4b6ZvoCpoI9Ga8ejM";
+//const AUTH_TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJyaWR2YW5jYWthcjdAZ21haWwuY29tIiwiZXhwIjoxNzY1ODYzNTQyfQ.HtSKK-YylJu6BwO-QkC6xSTKPgm0m3OxgT7MRlTPzj4";
+
+//eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJyaWR2YW5jYWthcjdAZ21haWwuY29tIiwiZXhwIjoxNzY1ODg0Njg1fQ.mFzXBXb7nOdu3GVwK7D5rqvgHr4b6ZvoCpoI9Ga8ejM
+// 2. Endpoint Haritası 
 const ENDPOINT_MAP: Record<string, string> = {
-  // Eski endpointler 
   hero: "/v1/admin/heroes",         
   card: "/v1/admin/cards",
   process: "/v1/admin/processes",
   contact_form: "/v1/admin/contact-form",
+  before_after: "/v1/admin/before-afters",
+  promotional_landing: "/v1/admin/promotional-landings",
   blog: "/v1/admin/blogs",
-  tag: "/v1/admin/tags",
   service: "/v1/admin/services",
   social_media: "/v1/admin/social-medias", 
   review: "/v1/admin/reviews",
-  before_after: "/v1/admin/before-afters",
-  user: "/v1/admin/users",
+  };
+
+export const getEndpointByType = (type: string) => {
+  return ENDPOINT_MAP[type] || null;
 };
 
+// 3. VERİ ÇEKME (GET)
 export const fetcher = async (url: string) => {
-  const token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJyaWR2YW5jYWthcjdAZ21haWwuY29tIiwiZXhwIjoxNzY1NjE1NDM3fQ._rqsDnHnCX2zjNCavJQgsdYGNekySGuBhfSNxO7ITII"; 
-
-  // URL birleştirme
   const fullUrl = `${API_BASE_URL}${url}`;
-
   console.log("İstek Atılıyor:", fullUrl); 
+
   const res = await fetch(fullUrl, {
     headers: {
       "Content-Type": "application/json",
-      "Authorization": `Bearer ${token}` 
+      "Authorization": `Bearer ${AUTH_TOKEN}` 
     },
   });
 
@@ -41,14 +46,7 @@ export const fetcher = async (url: string) => {
   return res.json();
 };
 
-export const getEndpointByType = (type: string) => {
-  return ENDPOINT_MAP[type] || null;
-};
-
-//eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJyaWR2YW5jYWthcjdAZ21haWwuY29tIiwiZXhwIjoxNzY1NjE1NDM3fQ._rqsDnHnCX2zjNCavJQgsdYGNekySGuBhfSNxO7ITII
-
-
-
+// 4. VERİ OLUŞTURMA (POST)
 export const createEntry = async (type: string, payload: any) => {
   const url = ENDPOINT_MAP[type];
   if (!url) throw new Error("Bu tip için endpoint bulunamadı");
@@ -59,29 +57,22 @@ export const createEntry = async (type: string, payload: any) => {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJyaWR2YW5jYWthcjdAZ21haWwuY29tIiwiZXhwIjoxNzY1NTQ5NzI3fQ.ep_3bzTOfk0PVkfs-d9dPK9i7UJ3c9oU2zetct5Vih8"
+      "Authorization": `Bearer ${AUTH_TOKEN}`
     },
     body: JSON.stringify(payload)
   });
 
   if (!res.ok) {
     const errorData = await res.json();
-    
     let errorMessage = "Kayıt oluşturulamadı";
     
     if (errorData.detail) {
-      if (Array.isArray(errorData.detail)) {
-        // Eğer hata bir liste ise (Örn: Phone eksik, Password kısa)
-        errorMessage = errorData.detail
-          .map((err: any) => `${err.loc?.[1] || 'Alan'}: ${err.msg}`)
-          .join('\n');
-      } else {
-        // Tekil mesajsa
-        errorMessage = errorData.detail;
-      }
+      errorMessage = Array.isArray(errorData.detail) 
+        ? errorData.detail.map((err: any) => `${err.loc?.[1] || 'Alan'}: ${err.msg}`).join('\n')
+        : errorData.detail;
     }
     
-    console.error("API Hatası Detay:", errorData); // Konsola da bas
+    console.error("API Hatası Detay:", errorData); 
     throw new Error(errorMessage);
   }
 

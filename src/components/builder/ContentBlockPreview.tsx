@@ -1,8 +1,7 @@
 // src/components/builder/ContentBlockPreview.tsx
 import React from 'react';
 import { ComponentType } from '@/types';
-// YENİ İKONLAR EKLENDİ: User, Tag
-import { Image, AlignLeft, Star, Share2, Briefcase, User, Tag } from 'lucide-react';
+import { Image, AlignLeft, Star, Share2, Briefcase,  } from 'lucide-react';
 
 interface ContentBlockPreviewProps {
   type: ComponentType;
@@ -51,34 +50,6 @@ export default function ContentBlockPreview({ type }: ContentBlockPreviewProps) 
         </div>
       );
 
-    // --- YENİ EKLENEN: USER (Kullanıcı Kartı Görünümü) ---
-    case 'user':
-      return (
-        <div className="flex items-center gap-3 p-3 border border-gray-100 rounded-lg bg-white shadow-sm">
-           {/* Avatar Yuvarlağı */}
-           <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-gray-400 shrink-0">
-              <User className="w-5 h-5" />
-           </div>
-           {/* İsim ve Role Çizgileri */}
-           <div className="space-y-2 flex-1">
-              <div className={`w-1/2 h-2.5 ${skeletonText}`}></div>
-              <div className={`w-3/4 h-2 ${skeletonText} opacity-60`}></div>
-           </div>
-        </div>
-      );
-
-    // --- YENİ EKLENEN: TAG (Etiket Bulutu Görünümü) ---
-    case 'tag':
-      return (
-        <div className="flex flex-wrap gap-2 p-2">
-           {[1, 2, 3, 4].map(i => (
-              <div key={i} className="px-3 py-1 bg-blue-50 border border-blue-100 rounded-full flex items-center gap-1">
-                 <Tag className="w-3 h-3 text-blue-300" />
-                 <div className="w-8 h-1.5 bg-blue-200 rounded-full opacity-50"></div>
-              </div>
-           ))}
-        </div>
-      );
 
     case 'contact_form': 
       return (

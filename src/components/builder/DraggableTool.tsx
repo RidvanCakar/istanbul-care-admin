@@ -16,7 +16,6 @@ export default function DraggableTool({ id, label, icon: Icon, onAdd }: Draggabl
     data: { type: id, fromSidebar: true },
   });
 
-  // Eğer sürükleniyorsa, sidebar'da kalan kopyasını biraz soluk yapalım
   const style = {
     opacity: isDragging ? 0.5 : 1,
   };
@@ -27,7 +26,7 @@ export default function DraggableTool({ id, label, icon: Icon, onAdd }: Draggabl
       style={style}
       className="flex items-center justify-between p-3 bg-white hover:bg-gray-50 border border-gray-200 rounded-lg shadow-sm group transition-all"
     >
-      {/* Sürükleme Kısmı (Sol taraf) */}
+      {/* Sürükleme Kısmı  */}
       <div 
         {...listeners} 
         {...attributes}
@@ -37,10 +36,10 @@ export default function DraggableTool({ id, label, icon: Icon, onAdd }: Draggabl
         <span className="text-sm font-medium text-gray-700">{label}</span>
       </div>
 
-      {/* Ekle Butonu (Sağ taraf) */}
+      {/* Ekle Butonu  */}
       <button
         onClick={(e) => {
-          e.stopPropagation(); // Tıklayınca sürüklemeyi tetiklemesin
+          e.stopPropagation(); 
           onAdd();
         }}
         className="p-1 text-blue-600 hover:bg-blue-50 rounded opacity-0 group-hover:opacity-100 transition-opacity"
