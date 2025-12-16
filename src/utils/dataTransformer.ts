@@ -5,10 +5,11 @@ export const transformToBackendFormat = (
   items: BuilderStateItem[],
   pageSettings: PageData,
   headerId: number,
-  footerId: number
+  footerId: number,
+  languageId: number // <--- YENİ PARAMETRE EKLENDİ
 ): BackendPagePayload => {
   
-  // 1. Boş Şablonu Hazırla
+  // 1. Boş Şablon
   const payload: BackendPagePayload = {
     // --- Metadata (Root Seviyesi) ---
     title: pageSettings.title || "Adsız Sayfa",
@@ -20,20 +21,24 @@ export const transformToBackendFormat = (
     robots_index: pageSettings.robots_index ?? true,
     robots_follow: pageSettings.robots_follow ?? true,
 
-    language_id: 1, 
+    language_id: languageId, // <--- ARTIK DİNAMİK (Parametreden geliyor)
     header_id: headerId || 0,
     footer_id: footerId || 0,
     parent_id: 0,
     faq_style: pageSettings.faq_style || "default_faq",
 
-    // --- Standart Listeler (Boş Dizi Başlat) ---
+    // --- Standart Listeler ---
     heroes: [],
     cards: [],
     processes: [],
     before_afters: [],
     contact_forms: [],
     promotional_landings: [],
+    sliders: [],
+    packages: [],
+    price_compares: [],
 
+    // --- Config Objeleri ---
     blogs: { enabled: false, order: 0, grid_columns: 12 },
     services: { enabled: false, order: 0, grid_columns: 12 },
     social_media: { enabled: false, order: 0, grid_columns: 12 },
@@ -78,6 +83,17 @@ export const transformToBackendFormat = (
       case 'promotional_landing':
         if (dbId) payload.promotional_landings.push(componentItem);
         break;
+      case 'slider':
+        if (dbId) payload.sliders.push(componentItem);
+        break;
+      case 'package':
+        if (dbId) payload.packages.push(componentItem);
+        break;
+      case 'price_compare':
+        if (dbId) payload.price_compares.push(componentItem);
+        break;
+      
+      // --- GRUP B: Config Objeleri ---
       case 'blog':
         payload.blogs = configItem;
         break;

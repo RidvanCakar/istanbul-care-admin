@@ -1,7 +1,7 @@
 // src/app/page.tsx
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react"; // useEffect eklendi
 import { 
   DndContext, 
   DragEndEvent, 
@@ -19,7 +19,7 @@ import {
   arrayMove 
 } from "@dnd-kit/sortable";
 import { v4 as uuidv4 } from 'uuid';
-import { Settings } from 'lucide-react';
+import { Settings, Globe, ChevronDown } from 'lucide-react'; // İkonlar eklendi
 
 // Bileşenlerimiz
 import BuilderSidebar from "@/components/builder/BuilderSidebar";
@@ -28,14 +28,15 @@ import FixedZone from "@/components/builder/FixedZone";
 import PageSettingsModal from "@/components/builder/PageSettingsModal";
 
 // Tipler ve Veriler
-import { BuilderStateItem, ComponentType, PageData } from "@/types";
+import { BuilderStateItem, ComponentType, PageData, Language } from "@/types"; // Language eklendi
 import { TOOLS } from "@/data/tools";
+import { fetcher, getEndpointByType } from "@/services/api"; // API fonksiyonları eklendi
 
 // JSON Dönüştürücü (Utils)
 import { transformToBackendFormat } from "@/utils/dataTransformer";
 
 // ----------------------------------------------------------------
-// 1. KANVAS BİLEŞENİ (GÖRSEL GÜNCELLEME BURADA YAPILDI)
+// 1. KANVAS BİLEŞENİ
 // ----------------------------------------------------------------
 interface BuilderCanvasProps {
   items: BuilderStateItem[];
@@ -68,7 +69,7 @@ function BuilderCanvas({
         isOver ? "bg-blue-50/30" : "bg-[#F9FAFB]"
       }`}
     >
-      {/* --- YENİ EKLENEN: NOKTALI BACKGROUND DESENİ --- */}
+      {/* Background Deseni */}
       <div className="absolute inset-0 pointer-events-none z-0 opacity-[0.4]"
            style={{
              backgroundImage: 'radial-gradient(#cbd5e1 1px, transparent 1px)',
@@ -88,7 +89,6 @@ function BuilderCanvas({
         {/* DİNAMİK İÇERİK ALANI */}
         <div className="flex-1 space-y-4 min-h-[200px]">
           {items.length === 0 ? (
-            // YENİ MODERN BOŞ DURUM TASARIMI
             <div className="border-2 border-dashed border-gray-300 rounded-xl p-16 flex flex-col items-center justify-center text-gray-400 bg-white/50 backdrop-blur-sm hover:border-blue-400 hover:text-blue-500 transition-all cursor-default">
                <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mb-4">
                   <svg className="w-8 h-8 opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 4v16m8-8H4" /></svg>
@@ -125,9 +125,7 @@ function BuilderCanvas({
   );
 }
 
-// ----------------------------------------------------------------
 // 2. ANA SAYFA
-// ----------------------------------------------------------------
 export default function PageBuilder() {
   // --- STATE ---
   const [items, setItems] = useState<BuilderStateItem[]>([]);
@@ -136,7 +134,11 @@ export default function PageBuilder() {
   const [headerId, setHeaderId] = useState<number>(0);
   const [footerId, setFooterId] = useState<number>(0);
   
-  // Sayfa Ayarları (SEO vs.)
+  // --- DİL SEÇİMİ (YENİ) ---
+  const [languages, setLanguages] = useState<Language[]>([]);
+  const [selectedLanguageId, setSelectedLanguageId] = useState<number>(1); // Varsayılan 1
+  
+  // Sayfa Ayarları
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [pageSettings, setPageSettings] = useState<Partial<PageData>>({
     title: "",
@@ -158,6 +160,53 @@ export default function PageBuilder() {
       activationConstraint: { distance: 5 },
     })
   );
+
+ 
+
+  // --- API'DEN DİLLERİ ÇEK  ---
+  useEffect(() => {
+    const loadLanguages = async () => {
+      try {
+        const endpoint = getEndpointByType('languages');
+        if (endpoint) {
+          const response = await fetcher(endpoint);
+          
+          console.log("Gelen Dil Verisi:", response); 
+
+          let langList: Language[] = [];
+
+          // 1. İhtimal (Senin Konsol Çıktına Göre DOĞRU OLAN): 
+          // Veri { data: { languages: [...] } } şeklinde geliyor.
+          if (response.data && Array.isArray(response.data.languages)) {
+            langList = response.data.languages;
+          }
+          // 2. İhtimal: Direkt dizi gelirse
+          else if (Array.isArray(response)) {
+            langList = response;
+          } 
+          // 3. İhtimal: { data: [...] } şeklinde gelirse
+          else if (response.data && Array.isArray(response.data)) {
+            langList = response.data;
+          }
+
+          setLanguages(langList);
+
+          // Eğer liste geldiyse ve henüz seçim yapılmadıysa ilkini seç
+          if (langList.length > 0) {
+             // Yoksa listenin ilkini seç
+             const defaultLang = langList.find(l => l.code === 'en') || langList[0];
+             setSelectedLanguageId(defaultLang.id);
+          }
+        }
+      } catch (error) {
+        console.error("Diller yüklenirken hata:", error);
+      }
+    };
+    loadLanguages();
+  }, []);
+
+
+
 
   // --- AKSİYONLAR ---
 
@@ -185,39 +234,34 @@ export default function PageBuilder() {
     setPageSettings((prev) => ({ ...prev, ...updates }));
   };
 
-  // --- KAYDETME VE İNDİRME İŞLEMİ ---
+  // --- KAYDETME VE İNDİRME İŞLEMİ (GÜNCELLENDİ) ---
   const handleSave = () => {
-    // 1. Veriyi Backend formatına çevir
+    // 1. Veriyi Backend formatına çevir (Artık seçilen DİL ID'sini de gönderiyoruz)
     const formattedData = transformToBackendFormat(
       items,
-      pageSettings,
+      pageSettings as PageData,
       headerId,
-      footerId
+      footerId,
+      selectedLanguageId // <--- BURASI EKLENDİ
     );
 
-    // 2. Veriyi JSON metnine (string) dönüştür
+    // 2. Veriyi JSON metnine dönüştür
     const jsonString = JSON.stringify(formattedData, null, 2);
 
-    // 3. Bu metinden bir "Dosya" (Blob) oluştur
+    // 3. İndirme Linki Oluştur
     const blob = new Blob([jsonString], { type: "application/json" });
-
-    // 4. Tarayıcıda bu dosya için geçici bir link oluştur
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
     
-    // Dosya ismini belirle: (Slug doluysa "slug-adi.json", boşsa "sayfa-verisi.json")
     const fileName = pageSettings.slug 
       ? `${pageSettings.slug}.json` 
-      : "sayfa-verisi.json";
+      : `sayfa-${selectedLanguageId}.json`;
       
     link.download = fileName;
 
-    // 5. Linke programatik olarak tıkla (İndirmeyi başlatır)
     document.body.appendChild(link);
     link.click();
-
-    // 6. Temizlik (Oluşturulan linki ve URL'i sil)
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
   };
@@ -241,14 +285,12 @@ export default function PageBuilder() {
 
     if (!over) return;
 
-    // 1. Sidebar'dan Canvas'a Ekleme
     if (active.data.current?.fromSidebar && over.id === "canvas-droppable") {
       const type = active.data.current.type as ComponentType;
       addNewItem(type);
       return;
     }
 
-    // 2. Canvas İçi Sıralama
     if (active.id !== over.id && !active.data.current?.fromSidebar) {
       setItems((items) => {
         const oldIndex = items.findIndex((item) => item.id === active.id);
@@ -258,14 +300,13 @@ export default function PageBuilder() {
     }
   };
 
-  // Overlay Görseli İçin Helper
   const sidebarToolInfo = activeDragId && activeDragId.startsWith('tool-') 
     ? TOOLS.find(t => `tool-${t.id}` === activeDragId) 
     : null;
 
   return (
     <DndContext 
-      id="builder-dnd-context" // <--- İŞTE ÇÖZÜM: Sabit bir ID verdik
+      id="builder-dnd-context"
       sensors={sensors} 
       collisionDetection={closestCenter} 
       onDragStart={handleDragStart} 
@@ -281,7 +322,7 @@ export default function PageBuilder() {
             <div className="flex items-center gap-4">
                <h1 className="text-lg font-bold text-gray-800">Sayfa Düzenleyici</h1>
                
-               {/* Ayarlar Butonu */}
+               {/* Sayfa Ayarları Butonu */}
                <button 
                  onClick={() => setIsSettingsOpen(true)}
                  className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-md transition-colors"
@@ -292,7 +333,25 @@ export default function PageBuilder() {
             </div>
             
             <div className="flex gap-3 items-center">
-                <span className="text-sm text-gray-500 mr-2 bg-gray-100 px-2 py-1 rounded">
+                {/* --- YENİ DİL SEÇİMİ --- */}
+                <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-md px-3 py-1.5">
+                  <Globe className="w-4 h-4 text-gray-500" />
+                  <select 
+                    value={selectedLanguageId}
+                    onChange={(e) => setSelectedLanguageId(Number(e.target.value))}
+                    className="bg-transparent text-sm text-gray-700 outline-none cursor-pointer min-w-[100px]"
+                  >
+                    {languages.length === 0 && <option value={1}>TR (Varsayılan)</option>}
+                    {languages.map((lang) => (
+                      <option key={lang.id} value={lang.id}>
+                        {lang.name} ({lang.code?.toUpperCase()})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                
+                {/* Bileşen Sayısı */}
+                <span className="text-sm text-gray-500 mr-2 ml-2 bg-gray-100 px-2 py-1 rounded">
                   {items.length} bileşen
                 </span>
                 
@@ -318,7 +377,7 @@ export default function PageBuilder() {
         </div>
       </main>
 
-      {/* SÜRÜKLEME GÖRSELLERİ (OVERLAY) */}
+      {/* OVERLAYS */}
       <DragOverlay>
         {sidebarToolInfo ? (
           <div className="flex items-center gap-3 p-3 bg-white border-2 border-blue-500 shadow-xl rounded-lg w-64 opacity-90 cursor-grabbing z-50">
@@ -335,7 +394,7 @@ export default function PageBuilder() {
         ) : null}
       </DragOverlay>
 
-      {/* AYARLAR PENCERESİ */}
+      {/* MODAL */}
       <PageSettingsModal 
         isOpen={isSettingsOpen} 
         onClose={() => setIsSettingsOpen(false)} 

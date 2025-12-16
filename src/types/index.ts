@@ -3,19 +3,21 @@
 // 1. Grid Boyutları
 export type GridSize = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12;
 
-// 2. Bileşen Tipleri
+// 2. Bileşen Tipleri 
 export type ComponentType = 
   | 'hero' 
   | 'card' 
   | 'process' 
   | 'before_after' 
   | 'contact_form' 
-  | 'slider' 
+  | 'slider'            
+  | 'package'           
+  | 'price_compare'     
   | 'promotional_landing'
   | 'blog' 
   | 'service' 
   | 'social_media' 
-  | 'review'
+  | 'review';
 
 // 3. Frontend State
 export interface BuilderStateItem {
@@ -27,7 +29,6 @@ export interface BuilderStateItem {
 }
 
 // 4. Backend İçin Standart Öğe Yapısı (Hero, Card vb.)
-// Örn: { id: 5, order: 1, grid_columns: 12 }
 export interface BackendComponentItem {
   id: number;
   order: number;
@@ -35,7 +36,6 @@ export interface BackendComponentItem {
 }
 
 // 5. Backend İçin Config Yapısı (Blog, Service vb.)
-// Örn: { enabled: true, order: 2, grid_columns: 12 }
 export interface BackendComponentConfig {
   enabled: boolean;
   order: number;
@@ -51,14 +51,22 @@ export interface PageData {
   robots_index: boolean;
   robots_follow: boolean;
   focus_keyword: string;
-  // Ekstra alanlar eklenebilir
   excerpt?: string;
   faq_style?: string;
 }
 
+export interface Language {
+  id: number;
+  name: string;
+  code: string;
+  flag_url?: string; 
+  is_default?: boolean;
+}
+
+
 // 7. BACKEND PAYLOAD (Sunucuya Giden Nihai JSON)
 export interface BackendPagePayload {
-  // Metadata (Artık Root seviyesinde)
+  // Metadata
   title: string;
   slug: string;
   excerpt: string;
@@ -74,13 +82,16 @@ export interface BackendPagePayload {
   parent_id: number | null;
   faq_style: string;
 
-  // Standart Listeler (Artık Obje Dizisi)
-  heroes: BackendComponentItem[]; // Dikkat: "heroes" (doğrusu bu)
+  // --- Standart Listeler  ---
+  heroes: BackendComponentItem[]; 
   cards: BackendComponentItem[];
   processes: BackendComponentItem[];
   before_afters: BackendComponentItem[];
   contact_forms: BackendComponentItem[];
   promotional_landings: BackendComponentItem[];
+  sliders: BackendComponentItem[];      
+  packages: BackendComponentItem[];     
+  price_compares: BackendComponentItem[]; 
 
   // Config Objeleri
   blogs: BackendComponentConfig;
