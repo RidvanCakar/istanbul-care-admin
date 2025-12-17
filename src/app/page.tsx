@@ -1,7 +1,7 @@
 // src/app/page.tsx
 "use client";
 
-import { useState, useEffect } from "react"; // useEffect eklendi
+import { useState, useEffect } from "react";
 import { 
   DndContext, 
   DragEndEvent, 
@@ -19,7 +19,7 @@ import {
   arrayMove 
 } from "@dnd-kit/sortable";
 import { v4 as uuidv4 } from 'uuid';
-import { Settings, Globe, ChevronDown } from 'lucide-react'; // İkonlar eklendi
+import { Settings, Globe, ChevronDown, Save, Loader2 } from 'lucide-react'; 
 
 // Bileşenlerimiz
 import BuilderSidebar from "@/components/builder/BuilderSidebar";
@@ -28,9 +28,10 @@ import FixedZone from "@/components/builder/FixedZone";
 import PageSettingsModal from "@/components/builder/PageSettingsModal";
 
 // Tipler ve Veriler
-import { BuilderStateItem, ComponentType, PageData, Language } from "@/types"; // Language eklendi
+import { BuilderStateItem, ComponentType, PageData, Language } from "@/types";
 import { TOOLS } from "@/data/tools";
-import { fetcher, getEndpointByType } from "@/services/api"; // API fonksiyonları eklendi
+// API FONKSİYONLARI EKLENDİ (createEntry)
+import { fetcher, getEndpointByType, createEntry } from "@/services/api"; 
 
 // JSON Dönüştürücü (Utils)
 import { transformToBackendFormat } from "@/utils/dataTransformer";
@@ -69,7 +70,6 @@ function BuilderCanvas({
         isOver ? "bg-blue-50/30" : "bg-[#F9FAFB]"
       }`}
     >
-      {/* Background Deseni */}
       <div className="absolute inset-0 pointer-events-none z-0 opacity-[0.4]"
            style={{
              backgroundImage: 'radial-gradient(#cbd5e1 1px, transparent 1px)',
@@ -79,14 +79,12 @@ function BuilderCanvas({
 
       <div className="max-w-4xl mx-auto min-h-[600px] flex flex-col gap-6 pb-20 relative z-10">
         
-        {/* SABİT HEADER */}
         <FixedZone 
           type="Header" 
           selectedId={headerId} 
           onChange={setHeaderId} 
         />
 
-        {/* DİNAMİK İÇERİK ALANI */}
         <div className="flex-1 space-y-4 min-h-[200px]">
           {items.length === 0 ? (
             <div className="border-2 border-dashed border-gray-300 rounded-xl p-16 flex flex-col items-center justify-center text-gray-400 bg-white/50 backdrop-blur-sm hover:border-blue-400 hover:text-blue-500 transition-all cursor-default">
@@ -113,7 +111,6 @@ function BuilderCanvas({
           )}
         </div>
 
-        {/* SABİT FOOTER */}
         <FixedZone 
           type="Footer" 
           selectedId={footerId} 
@@ -125,20 +122,20 @@ function BuilderCanvas({
   );
 }
 
+// ----------------------------------------------------------------
 // 2. ANA SAYFA
+// ----------------------------------------------------------------
 export default function PageBuilder() {
-  // --- STATE ---
   const [items, setItems] = useState<BuilderStateItem[]>([]);
-  
-  // Header / Footer Seçimleri
   const [headerId, setHeaderId] = useState<number>(0);
   const [footerId, setFooterId] = useState<number>(0);
   
-  // --- DİL SEÇİMİ (YENİ) ---
   const [languages, setLanguages] = useState<Language[]>([]);
-  const [selectedLanguageId, setSelectedLanguageId] = useState<number>(1); // Varsayılan 1
+  const [selectedLanguageId, setSelectedLanguageId] = useState<number>(1);
   
-  // Sayfa Ayarları
+  // KAYDETME DURUMU (YENİ)
+  const [isSaving, setIsSaving] = useState(false);
+  
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [pageSettings, setPageSettings] = useState<Partial<PageData>>({
     title: "",
@@ -150,51 +147,39 @@ export default function PageBuilder() {
     focus_keyword: ""
   });
 
-  // Sürükleme Efektleri
   const [activeDragId, setActiveDragId] = useState<string | null>(null);
   const [activeDragItem, setActiveDragItem] = useState<BuilderStateItem | null>(null);
 
-  // Sensörler
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: { distance: 5 },
     })
   );
 
- 
-
-  // --- API'DEN DİLLERİ ÇEK  ---
   useEffect(() => {
     const loadLanguages = async () => {
       try {
         const endpoint = getEndpointByType('languages');
         if (endpoint) {
           const response = await fetcher(endpoint);
-          
           console.log("Gelen Dil Verisi:", response); 
 
           let langList: Language[] = [];
 
-          // 1. İhtimal (Senin Konsol Çıktına Göre DOĞRU OLAN): 
-          // Veri { data: { languages: [...] } } şeklinde geliyor.
           if (response.data && Array.isArray(response.data.languages)) {
             langList = response.data.languages;
           }
-          // 2. İhtimal: Direkt dizi gelirse
           else if (Array.isArray(response)) {
             langList = response;
           } 
-          // 3. İhtimal: { data: [...] } şeklinde gelirse
           else if (response.data && Array.isArray(response.data)) {
             langList = response.data;
           }
 
           setLanguages(langList);
 
-          // Eğer liste geldiyse ve henüz seçim yapılmadıysa ilkini seç
           if (langList.length > 0) {
-             // Yoksa listenin ilkini seç
-             const defaultLang = langList.find(l => l.code === 'en') || langList[0];
+             const defaultLang = langList.find(l => l.code === 'tr') || langList[0];
              setSelectedLanguageId(defaultLang.id);
           }
         }
@@ -204,9 +189,6 @@ export default function PageBuilder() {
     };
     loadLanguages();
   }, []);
-
-
-
 
   // --- AKSİYONLAR ---
 
@@ -234,40 +216,50 @@ export default function PageBuilder() {
     setPageSettings((prev) => ({ ...prev, ...updates }));
   };
 
-  // --- KAYDETME VE İNDİRME İŞLEMİ (GÜNCELLENDİ) ---
-  const handleSave = () => {
-    // 1. Veriyi Backend formatına çevir (Artık seçilen DİL ID'sini de gönderiyoruz)
-    const formattedData = transformToBackendFormat(
-      items,
-      pageSettings as PageData,
-      headerId,
-      footerId,
-      selectedLanguageId // <--- BURASI EKLENDİ
-    );
+  // --- HEM API'YE KAYDET HEM JSON İNDİR  ---
+  const handleSave = async () => {
+    setIsSaving(true); // Yükleniyor durumunu aç
 
-    // 2. Veriyi JSON metnine dönüştür
-    const jsonString = JSON.stringify(formattedData, null, 2);
+    try {
+      // 1. Veriyi hazırla
+      const formattedData = transformToBackendFormat(
+        items,
+        pageSettings as PageData,
+        headerId,
+        footerId,
+        selectedLanguageId
+      );
 
-    // 3. İndirme Linki Oluştur
-    const blob = new Blob([jsonString], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    
-    const fileName = pageSettings.slug 
-      ? `${pageSettings.slug}.json` 
-      : `sayfa-${selectedLanguageId}.json`;
+      console.log("Sunucuya gönderiliyor...", formattedData);
+      await createEntry('pages', formattedData);
       
-    link.download = fileName;
+      // Başarı Mesajı
+      alert(`Sayfa Başarıyla Kaydedildi! (ID: ${selectedLanguageId})`);
 
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
+      // 3. JSON Yedek İndir 
+      const jsonString = JSON.stringify(formattedData, null, 2);
+      const blob = new Blob([jsonString], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      const fileName = pageSettings.slug 
+        ? `${pageSettings.slug}.json` 
+        : `sayfa-${selectedLanguageId}.json`;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+
+    } catch (error: any) {
+      console.error("Kayıt Hatası:", error);
+      alert("Hata oluştu: " + error.message);
+    } finally {
+      setIsSaving(false); 
+    }
   };
 
-  // --- SÜRÜKLE BIRAK HANDLERLARI ---
-  
+  // --- DRAG DROP HANDLERS ---
   const handleDragStart = (event: DragStartEvent) => {
     const { active } = event;
     setActiveDragId(active.id as string);
@@ -317,12 +309,10 @@ export default function PageBuilder() {
 
         <div className="flex-1 flex flex-col h-full overflow-hidden">
           
-          {/* ÜST BAR */}
           <header className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-6 z-20 shadow-sm shrink-0">
             <div className="flex items-center gap-4">
                <h1 className="text-lg font-bold text-gray-800">Sayfa Düzenleyici</h1>
                
-               {/* Sayfa Ayarları Butonu */}
                <button 
                  onClick={() => setIsSettingsOpen(true)}
                  className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-md transition-colors"
@@ -333,7 +323,6 @@ export default function PageBuilder() {
             </div>
             
             <div className="flex gap-3 items-center">
-                {/* --- YENİ DİL SEÇİMİ --- */}
                 <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-md px-3 py-1.5">
                   <Globe className="w-4 h-4 text-gray-500" />
                   <select 
@@ -350,17 +339,29 @@ export default function PageBuilder() {
                   </select>
                 </div>
                 
-                {/* Bileşen Sayısı */}
                 <span className="text-sm text-gray-500 mr-2 ml-2 bg-gray-100 px-2 py-1 rounded">
                   {items.length} bileşen
                 </span>
                 
-                {/* Kaydet Butonu */}
+                {/* YENİ KAYDET BUTONU (Yükleniyor desteği ile) */}
                 <button 
                   onClick={handleSave} 
-                  className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 transition-colors shadow-sm"
+                  disabled={isSaving}
+                  className={`flex items-center gap-2 px-4 py-2 text-white text-sm font-medium rounded-md transition-colors shadow-sm ${
+                    isSaving ? "bg-blue-400 cursor-not-allowed" : "bg-blue-600 hover:bg-blue-700"
+                  }`}
                 >
-                  Kaydet
+                  {isSaving ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      Kaydediliyor...
+                    </>
+                  ) : (
+                    <>
+                      <Save className="w-4 h-4" />
+                      Kaydet & Oluştur
+                    </>
+                  )}
                 </button>
             </div>
           </header>
@@ -377,7 +378,6 @@ export default function PageBuilder() {
         </div>
       </main>
 
-      {/* OVERLAYS */}
       <DragOverlay>
         {sidebarToolInfo ? (
           <div className="flex items-center gap-3 p-3 bg-white border-2 border-blue-500 shadow-xl rounded-lg w-64 opacity-90 cursor-grabbing z-50">
@@ -394,7 +394,6 @@ export default function PageBuilder() {
         ) : null}
       </DragOverlay>
 
-      {/* MODAL */}
       <PageSettingsModal 
         isOpen={isSettingsOpen} 
         onClose={() => setIsSettingsOpen(false)} 

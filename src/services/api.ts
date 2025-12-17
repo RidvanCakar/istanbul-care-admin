@@ -4,7 +4,7 @@
 export const API_BASE_URL = "https://api.istanbul-care.com"; 
 
 // GÜNCEL TOKEN 
-const AUTH_TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJyaWR2YW5jYWthcjdAZ21haWwuY29tIiwiZXhwIjoxNzY1OTQ5ODg5fQ.O0Ez1LEuZ0aQ4BOOmnIB4fC9UYBZkQJN-Cke7uB9vsg";
+const AUTH_TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJyaWR2YW5jYWthcjdAZ21haWwuY29tIiwiZXhwIjoxNzY1OTc5MDM2fQ.ceRh6dW4eNMKifgwtxQFkfdnPdeV7awA8rkGzHd3CSQ";
 
 // 2. Endpoint Haritası
 const ENDPOINT_MAP: Record<string, string> = {
@@ -18,13 +18,16 @@ const ENDPOINT_MAP: Record<string, string> = {
   slider: "/v1/admin/sliders",
   package: "/v1/admin/packages",
   price_compare: "/v1/admin/price-compares",
-  languages: "/v1/admin/languages",
-
+  
   // Config Olanlar
   blog: "/v1/admin/blogs",
   service: "/v1/admin/services",
   social_media: "/v1/admin/social-medias", 
   review: "/v1/admin/reviews",
+
+  // --- GENEL SİSTEM ---
+  languages: "/v1/admin/languages",
+  pages: "/v1/admin/pages", 
 };
 
 export const getEndpointByType = (type: string) => {
