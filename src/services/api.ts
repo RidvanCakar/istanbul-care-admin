@@ -3,8 +3,14 @@
 // 1. BASE URL 
 export const API_BASE_URL = "https://api.istanbul-care.com"; 
 
-// GÜNCEL TOKEN 
-const AUTH_TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJyaWR2YW5jYWthcjdAZ21haWwuY29tIiwiZXhwIjoxNzY1OTc5MDM2fQ.ceRh6dW4eNMKifgwtxQFkfdnPdeV7awA8rkGzHd3CSQ";
+// --- GÜNCELLEME: TOKEN ARTIK DİNAMİK ALINIYOR ---
+const getAuthToken = () => {
+  // Next.js sunucu tarafında çalışırken window olmadığı için hata vermesin diye kontrol ediyoruz
+  if (typeof window !== "undefined") {
+    return localStorage.getItem("auth_token") || "";
+  }
+  return "";
+};
 
 // 2. Endpoint Haritası
 const ENDPOINT_MAP: Record<string, string> = {
@@ -37,16 +43,18 @@ export const getEndpointByType = (type: string) => {
 // 3. VERİ ÇEKME (GET)
 export const fetcher = async (url: string) => {
   const fullUrl = `${API_BASE_URL}${url}`;
-  console.log("İstek Atılıyor:", fullUrl); 
+  // console.log("İstek Atılıyor:", fullUrl); 
 
   const res = await fetch(fullUrl, {
     headers: {
       "Content-Type": "application/json",
-      "Authorization": `Bearer ${AUTH_TOKEN}` 
+      // --- DİNAMİK TOKEN KULLANIMI ---
+      "Authorization": `Bearer ${getAuthToken()}` 
     },
   });
 
   if (!res.ok) {
+    // 401 Hatası (Yetkisiz) gelirse belki login'e atmak isteyebiliriz ileride
     console.error(`API Hatası (${res.status}):`, await res.text());
     throw new Error("API Hatası");
   }
@@ -65,7 +73,8 @@ export const createEntry = async (type: string, payload: any) => {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      "Authorization": `Bearer ${AUTH_TOKEN}`
+      // --- DİNAMİK TOKEN KULLANIMI ---
+      "Authorization": `Bearer ${getAuthToken()}`
     },
     body: JSON.stringify(payload)
   });
