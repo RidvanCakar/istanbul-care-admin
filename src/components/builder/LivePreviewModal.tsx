@@ -1,6 +1,6 @@
 // src/components/builder/LivePreviewModal.tsx
 import React, { useMemo } from 'react';
-import { X, Smartphone, Tablet, Monitor } from 'lucide-react';
+import { X, Smartphone, Tablet, Monitor, Loader2, AlertCircle } from 'lucide-react';
 import { BuilderStateItem } from '@/types';
 import { COMPONENT_REGISTRY } from '@/config/componentRegistry';
 import useSWR from 'swr';
@@ -12,13 +12,12 @@ interface LivePreviewModalProps {
   items: BuilderStateItem[];
 }
 
-// --- AKILLI ÖNİZLEME BİLEŞENİ ---
-// Editördeki veri işleme mantığının aynısını buraya taşıdık.
+// --- TEKİL ÖNİZLEME BİLEŞENİ ---
 const PreviewItem = ({ item }: { item: BuilderStateItem }) => {
   const endpoint = getEndpointByType(item.type);
-  const { data } = useSWR(endpoint, fetcher);
+  const { data, isLoading } = useSWR(endpoint, fetcher);
 
-  // 1. VERİ AYIKLAMA (Smart Search)
+  // 1. VERİ AYIKLAMA (Gelişmiş Arama)
   const options = useMemo(() => {
     if (!data) return [];
     if (Array.isArray(data)) return data;
@@ -26,9 +25,13 @@ const PreviewItem = ({ item }: { item: BuilderStateItem }) => {
 
     if (data.data && typeof data.data === 'object') {
        const typeStr = item.type as string;
+       // Tip bazlı özel aramalar
        if ((typeStr === 'services' || typeStr === 'service') && Array.isArray(data.data.services)) return data.data.services;
        if ((typeStr === 'blogs' || typeStr === 'blog') && Array.isArray(data.data.posts)) return data.data.posts;
+       if ((typeStr === 'package' || typeStr === 'packages') && Array.isArray(data.data.packages)) return data.data.packages;
+       if ((typeStr === 'comments' || typeStr === 'review') && (Array.isArray(data.data.comments) || Array.isArray(data.data.reviews))) return data.data.comments || data.data.reviews;
        
+       // Genel arama (Objenin içindeki herhangi bir array'i bul)
        const keys = Object.keys(data.data);
        for (const key of keys) {
            if (Array.isArray(data.data[key])) return data.data[key];
@@ -37,14 +40,16 @@ const PreviewItem = ({ item }: { item: BuilderStateItem }) => {
     return [];
   }, [data, item.type]);
 
-  // 2. SEÇİLİ VERİYİ BULMA
+  // 2. SEÇİLİ VERİYİ BULMA (ESNEK ID KONTROLÜ EKLENDİ 🛠️)
   const selectedData = useMemo(() => {
-    return options.find((o: any) => o.id === item.dbId) || null;
+    if (!item.dbId) return null;
+    // Hem string hem number ID'leri yakalamak için String() çevrimi yapıyoruz veya '==' kullanıyoruz
+    return options.find((o: any) => String(o.id) === String(item.dbId)) || null;
   }, [options, item.dbId]);
 
   const RealComponent = COMPONENT_REGISTRY[item.type];
 
-  // 3. PROPS ADAPTÖRÜ (Zırhlı Koruma)
+  // 3. PROPS ADAPTÖRÜ
   const componentProps = useMemo(() => {
     if (!selectedData) return null;
 
@@ -67,7 +72,7 @@ const PreviewItem = ({ item }: { item: BuilderStateItem }) => {
             if (newObj.image) newObj.image = fixUrl(newObj.image);
             if (newObj.src) newObj.src = fixUrl(newObj.src);
             
-            ['slides', 'items', 'cards', 'features', 'steps', 'services', 'posts', 'serviceItems'].forEach(key => {
+            ['slides', 'items', 'cards', 'features', 'steps', 'services', 'posts', 'serviceItems', 'packages', 'comments', 'reviews'].forEach(key => {
                 if (newObj[key] && Array.isArray(newObj[key])) {
                     newObj[key] = newObj[key].map((subItem: any) => deepFixData(subItem));
                 }
@@ -88,7 +93,7 @@ const PreviewItem = ({ item }: { item: BuilderStateItem }) => {
         if (!normalizedData.title) normalizedData.title = normalizedData.name || "Başlık Yok";
     }
 
-    // 🔥 PROCESS FIX (Timeline)
+    // PROCESS FIX
     if (item.type === 'process') {
         const rawArray = normalizedData.slides || normalizedData.steps || normalizedData.items || normalizedData.stages || [];
         const safeArray = Array.isArray(rawArray) ? rawArray : [];
@@ -103,7 +108,6 @@ const PreviewItem = ({ item }: { item: BuilderStateItem }) => {
         return { slides: robustSlides, items: robustSlides, data: { ...normalizedData, items: robustSlides }, locale, mediaBaseUrl };
     }
 
-    // 🔥 SERVICE ITEMS FIX (Slider)
     let dataAsList = Array.isArray(normalizedData) ? normalizedData : [normalizedData];
 
     return {
@@ -111,17 +115,44 @@ const PreviewItem = ({ item }: { item: BuilderStateItem }) => {
         items: dataAsList,           
         services: dataAsList,        
         posts: dataAsList,
-        serviceItems: dataAsList, // Bu olmadan slider çalışmaz!
+        serviceItems: dataAsList, 
+        packages: dataAsList,
+        comments: dataAsList,
+        reviews: dataAsList,
+        
         locale,
         mediaBaseUrl,
         ...normalizedData 
     };
   }, [selectedData, item.type]);
 
-  if (!item.dbId || !selectedData || !RealComponent || !componentProps) return null;
-
   // Grid Genişliği
   const gridWidth = (item.grid_columns / 12) * 100;
+
+  // --- RENDERING ---
+  
+  // 1. Veri Yükleniyorsa
+  if (isLoading) {
+    return (
+        <div style={{ width: `${gridWidth}%`, padding: '20px' }} className="flex justify-center items-center h-32 bg-gray-50 border border-dashed animate-pulse">
+            <Loader2 className="w-6 h-6 animate-spin text-gray-400" />
+            <span className="ml-2 text-xs text-gray-400">Yükleniyor...</span>
+        </div>
+    );
+  }
+
+  // 2. İçerik Seçilmemişse veya Veri Bulunamadıysa
+  if (!selectedData) {
+      return (
+         <div style={{ width: `${gridWidth}%`, padding: '20px' }} className="hidden">
+             {/* İçerik seçilmeyenleri önizlemede gizliyoruz, ama yer kaplamasın diye 'hidden' yapıyoruz */}
+             <span className="text-red-500 text-xs">Veri Yok ({item.type})</span>
+         </div>
+      );
+  }
+
+  // 3. Bileşen Render
+  if (!RealComponent) return <div className="text-red-500 p-4">Bileşen Bulunamadı: {item.type}</div>;
 
   return (
     <div style={{ width: `${gridWidth}%`, padding: '0', position: 'relative' }}>
@@ -148,7 +179,7 @@ export default function LivePreviewModal({ isOpen, onClose, items }: LivePreview
       <div className="h-14 bg-gray-900 border-b border-gray-800 flex items-center justify-between px-6 shrink-0">
         <h2 className="text-white font-bold flex items-center gap-2">
           <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
-          Canlı Önizleme
+          Canlı Önizleme <span className="text-xs font-normal text-gray-400 ml-2">({items.length} bileşen)</span>
         </h2>
         
         <div className="flex bg-gray-800 rounded-lg p-1 border border-gray-700">
@@ -164,15 +195,28 @@ export default function LivePreviewModal({ isOpen, onClose, items }: LivePreview
 
       {/* Önizleme Alanı */}
       <div className="flex-1 overflow-y-auto bg-gray-950/50 flex justify-center py-8">
+        {/* Device Frame */}
         <div 
-            className={`${widthClass} bg-white transition-all duration-300 shadow-2xl overflow-hidden min-h-[800px] origin-top`}
-            style={{ transform: device === 'mobile' ? 'scale(1)' : 'scale(1)' }}
+            className={`${widthClass} bg-white transition-all duration-300 shadow-2xl min-h-[800px] origin-top`}
+            style={{ 
+                transform: device === 'mobile' ? 'scale(1)' : 'scale(1)',
+                // ÖNEMLİ: Overflow-hidden'ı kaldırdık ki içerikler kesilmesin
+                overflow: 'visible' 
+            }}
         >
           {/* İçeriklerin Render Edildiği Yer */}
-          <div className="flex flex-wrap content-start">
+          <div className="flex flex-wrap content-start w-full h-full">
              {items.map((item) => (
                 <PreviewItem key={item.id} item={item} />
              ))}
+             
+             {/* Liste boşsa uyarı */}
+             {items.length === 0 && (
+                 <div className="w-full h-96 flex flex-col items-center justify-center text-gray-400">
+                     <AlertCircle className="w-10 h-10 mb-2" />
+                     <p>Henüz bileşen eklenmedi.</p>
+                 </div>
+             )}
           </div>
         </div>
       </div>

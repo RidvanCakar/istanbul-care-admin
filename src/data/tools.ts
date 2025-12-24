@@ -14,7 +14,7 @@ import {
   ArrowRightLeft,  
   Megaphone,       
   Package,
-  MessageSquare 
+  MessageSquare,
 } from "lucide-react";
 
 export const TOOLS: { id: ComponentType; label: string; icon: any }[] = [
@@ -27,7 +27,7 @@ export const TOOLS: { id: ComponentType; label: string; icon: any }[] = [
   // --- İçerik ---
   { id: 'before_after', label: 'Before/After', icon: Images },
   { id: 'process', label: 'Process', icon: Settings2 },
-  { id: 'package', label: 'Packages', icon: Package }, 
+  { id: 'package', label: 'Pages', icon: Package }, 
   { id: 'price_compare', label: 'Price Compares', icon: ArrowRightLeft }, 
 
   // --- İletişim & Config ---

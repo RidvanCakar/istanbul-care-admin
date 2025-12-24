@@ -67,7 +67,7 @@ export const COMPONENT_REGISTRY: any = {
   review: safeImport('CommentSlider'),
 
   // Package -> "Pricing"
-  package: safeImport('Pricing'), 
+  package: safeImport('CenteredImagePage'), 
   
   // Service -> "OurServicesSlider"
   service: safeImport('OurServicesSlider'),

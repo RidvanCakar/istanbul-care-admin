@@ -93,6 +93,7 @@ export interface BackendPagePayload {
   sliders: BackendComponentItem[];      
   packages: BackendComponentItem[];     
   price_compares: BackendComponentItem[]; 
+  
 
   // Config Objeleri
   blogs: BackendComponentConfig;
