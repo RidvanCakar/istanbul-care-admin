@@ -19,7 +19,9 @@
     "react": "19.2.1",
     "react-dom": "19.2.1",
     "swr": "^2.3.7",
-    "uuid": "^13.0.0"
+    "uuid": "^13.0.0",
+    "@istanbul-care/ui": "file:packages/elements/packages/ui",
+    "@istanbul-care/types": "file:packages/elements/packages/types"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",

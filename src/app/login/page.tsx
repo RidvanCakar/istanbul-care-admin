@@ -246,7 +246,7 @@ export default function LoginPage() {
             {/* SADE VE ŞIK BAŞLIK */}
             <h2 className="text-5xl font-black mb-6 leading-tight tracking-tight text-white">
                 Istanbul Care <br/>
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-200 to-indigo-300">Clinic.</span>
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-200 to-indigo-300">Admin Paneli</span>
             </h2>
             
             <p className="text-lg text-blue-100/80 mb-10 leading-relaxed font-light">

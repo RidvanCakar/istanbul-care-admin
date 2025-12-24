@@ -2,7 +2,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation"; // Router eklendi
+import { useRouter } from "next/navigation"; 
 import { 
   DndContext, 
   DragEndEvent, 
@@ -16,17 +16,18 @@ import {
 } from "@dnd-kit/core";
 import { 
   SortableContext, 
-  verticalListSortingStrategy, 
+  rectSortingStrategy, 
   arrayMove 
 } from "@dnd-kit/sortable";
 import { v4 as uuidv4 } from 'uuid';
-import { Settings, Globe, Save, Loader2, LogOut } from 'lucide-react'; // LogOut eklendi
+import { Settings, Globe, Save, Loader2, LogOut, Eye } from 'lucide-react'; 
 
 // Bileşenlerimiz
 import BuilderSidebar from "@/components/builder/BuilderSidebar";
 import SortableCanvasItem from "@/components/builder/SortableCanvasItem";
 import FixedZone from "@/components/builder/FixedZone";
 import PageSettingsModal from "@/components/builder/PageSettingsModal";
+import LivePreviewModal from "@/components/builder/LivePreviewModal";
 
 // Tipler ve Veriler
 import { BuilderStateItem, ComponentType, PageData, Language } from "@/types";
@@ -35,7 +36,7 @@ import { fetcher, getEndpointByType, createEntry } from "@/services/api";
 import { transformToBackendFormat } from "@/utils/dataTransformer";
 
 // ----------------------------------------------------------------
-// 1. KANVAS BİLEŞENİ (Değişiklik Yok)
+// 1. KANVAS BİLEŞENİ
 // ----------------------------------------------------------------
 interface BuilderCanvasProps {
   items: BuilderStateItem[];
@@ -62,9 +63,12 @@ function BuilderCanvas({
            style={{ backgroundImage: 'radial-gradient(#cbd5e1 1px, transparent 1px)', backgroundSize: '24px 24px' }}
       />
 
-      <div className="max-w-4xl mx-auto min-h-[600px] flex flex-col gap-6 pb-20 relative z-10">
+      {/* Container: 1440px Genişlik Sınırı */}
+      <div className="max-w-[1440px] mx-auto min-h-[600px] flex flex-col gap-6 pb-20 relative z-10">
         <FixedZone type="Header" selectedId={headerId} onChange={setHeaderId} />
-        <div className="flex-1 space-y-4 min-h-[200px]">
+        
+        {/* Sahne Alanı: Flex Wrap ile Yan Yana Dizilim */}
+        <div className="flex-1 min-h-[200px]">
           {items.length === 0 ? (
             <div className="border-2 border-dashed border-gray-300 rounded-xl p-16 flex flex-col items-center justify-center text-gray-400 bg-white/50 backdrop-blur-sm hover:border-blue-400 hover:text-blue-500 transition-all cursor-default">
                <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mb-4">
@@ -74,11 +78,18 @@ function BuilderCanvas({
                <p className="text-sm opacity-60 mt-1">Soldan bir bileşen sürükleyip buraya bırakın</p>
             </div>
           ) : (
-            <SortableContext items={items.map(item => item.id)} strategy={verticalListSortingStrategy}>
-                {items.map((item) => (<SortableCanvasItem key={item.id} item={item} onRemove={onRemove} onUpdate={onUpdate}/>))}
+            // Strateji: rectSortingStrategy (Kutucuk dizilimi)
+            // Layout: flex flex-wrap (Yan yana sığdırma)
+            <SortableContext items={items.map(item => item.id)} strategy={rectSortingStrategy}>
+                <div className="flex flex-wrap content-start -mx-2">
+                    {items.map((item) => (
+                        <SortableCanvasItem key={item.id} item={item} onRemove={onRemove} onUpdate={onUpdate}/>
+                    ))}
+                </div>
             </SortableContext>
           )}
         </div>
+        
         <FixedZone type="Footer" selectedId={footerId} onChange={setFooterId} />
       </div>
     </div>
@@ -86,36 +97,33 @@ function BuilderCanvas({
 }
 
 // ----------------------------------------------------------------
-// 2. ANA SAYFA (GÜNCELLENDİ)
+// 2. ANA SAYFA
 // ----------------------------------------------------------------
 export default function PageBuilder() {
   const router = useRouter();
-  const [isAuthChecking, setIsAuthChecking] = useState(true); // Yükleme durumu
+  const [isAuthChecking, setIsAuthChecking] = useState(true);
 
-  // --- KORUMA KALKANI (AUTH CHECK) ---
+  // Auth Kontrolü
   useEffect(() => {
-    // Tarayıcı tarafında çalışıyorsak
     if (typeof window !== "undefined") {
       const token = localStorage.getItem("auth_token");
       if (!token) {
-        // Token yok, Login'e at
         router.push("/login");
       } else {
-        // Token var, yüklemeyi bitir
         setIsAuthChecking(false);
       }
     }
   }, [router]);
 
-  // --- STATE ---
+  // State Tanımları
   const [items, setItems] = useState<BuilderStateItem[]>([]);
   const [headerId, setHeaderId] = useState<number>(0);
   const [footerId, setFooterId] = useState<number>(0);
-  
   const [languages, setLanguages] = useState<Language[]>([]);
   const [selectedLanguageId, setSelectedLanguageId] = useState<number>(1);
   const [isSaving, setIsSaving] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   
   const [pageSettings, setPageSettings] = useState<Partial<PageData>>({
     title: "", slug: "", meta_title: "", meta_description: "", robots_index: true, robots_follow: true, focus_keyword: ""
@@ -126,7 +134,6 @@ export default function PageBuilder() {
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
 
-  // --- ÇIKIŞ YAPMA (LOGOUT) ---
   const handleLogout = () => {
     if (confirm("Çıkış yapmak istediğinize emin misiniz?")) {
       localStorage.removeItem("auth_token");
@@ -135,9 +142,9 @@ export default function PageBuilder() {
     }
   };
 
-  // --- VERİ ÇEKME (Sadece Auth Başarılıysa) ---
+  // Dil Yükleme
   useEffect(() => {
-    if (isAuthChecking) return; // Auth kontrolü bitmeden istek atma
+    if (isAuthChecking) return; 
 
     const loadLanguages = async () => {
       try {
@@ -148,11 +155,9 @@ export default function PageBuilder() {
 
           if (response.data && Array.isArray(response.data.languages)) {
             langList = response.data.languages;
-          }
-          else if (Array.isArray(response)) {
+          } else if (Array.isArray(response)) {
             langList = response;
-          } 
-          else if (response.data && Array.isArray(response.data)) {
+          } else if (response.data && Array.isArray(response.data)) {
             langList = response.data;
           }
 
@@ -169,7 +174,7 @@ export default function PageBuilder() {
     loadLanguages();
   }, [isAuthChecking]);
 
-  // --- AKSİYONLAR ---
+  // Yardımcı Fonksiyonlar
   const addNewItem = (type: ComponentType) => {
     setItems((prev) => [...prev, { id: uuidv4(), type: type, grid_columns: 12, order: items.length + 1 }]);
   };
@@ -186,27 +191,38 @@ export default function PageBuilder() {
     setPageSettings((prev) => ({ ...prev, ...updates }));
   };
 
+  // 🔥 KAYDETME VE İNDİRME FONKSİYONU (Düzeltildi)
   const handleSave = async () => {
     setIsSaving(true);
     try {
+      // 1. Veriyi hazırla
       const formattedData = transformToBackendFormat(
         items, pageSettings as PageData, headerId, footerId, selectedLanguageId
       );
+
+      // 2. Backend'e kaydet
       await createEntry('pages', formattedData);
       
       alert(`Sayfa Başarıyla Kaydedildi! (ID: ${selectedLanguageId})`);
 
+      // 3. JSON Dosyasını İndir
       const jsonString = JSON.stringify(formattedData, null, 2);
       const blob = new Blob([jsonString], { type: "application/json" });
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
-      const fileName = pageSettings.slug ? `${pageSettings.slug}.json` : `sayfa-${selectedLanguageId}.json`;
+      
+      const fileName = pageSettings.slug 
+        ? `${pageSettings.slug}.json` 
+        : `sayfa-${selectedLanguageId}-${Date.now()}.json`;
+        
       link.download = fileName;
       document.body.appendChild(link);
       link.click();
+      
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
+
     } catch (error: any) {
       alert("Hata oluştu: " + error.message);
     } finally {
@@ -214,7 +230,7 @@ export default function PageBuilder() {
     }
   };
 
-  // Drag handlers
+  // Drag Handlers
   const handleDragStart = (event: DragStartEvent) => {
     const { active } = event;
     setActiveDragId(active.id as string);
@@ -244,7 +260,6 @@ export default function PageBuilder() {
 
   const sidebarToolInfo = activeDragId && activeDragId.startsWith('tool-') ? TOOLS.find(t => `tool-${t.id}` === activeDragId) : null;
 
-  // --- YÜKLENİYOR EKRANI (AUTH CHECK SIRASINDA) ---
   if (isAuthChecking) {
     return (
       <div className="h-screen w-full flex items-center justify-center bg-gray-50">
@@ -262,7 +277,6 @@ export default function PageBuilder() {
         <BuilderSidebar onAddItem={addNewItem} />
 
         <div className="flex-1 flex flex-col h-full overflow-hidden">
-          
           <header className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-6 z-20 shadow-sm shrink-0">
             <div className="flex items-center gap-4">
                <h1 className="text-lg font-bold text-gray-800">Sayfa Düzenleyici</h1>
@@ -282,16 +296,15 @@ export default function PageBuilder() {
                 
                 <span className="text-sm text-gray-500 mr-2 ml-2 bg-gray-100 px-2 py-1 rounded">{items.length} bileşen</span>
                 
+                <button onClick={() => setIsPreviewOpen(true)} className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 text-gray-700 text-sm font-bold rounded-md hover:bg-gray-50 hover:text-blue-600 transition-all shadow-sm">
+                  <Eye className="w-4 h-4" /> Önizle
+                </button>
+
                 <button onClick={handleSave} disabled={isSaving} className={`flex items-center gap-2 px-4 py-2 text-white text-sm font-medium rounded-md transition-colors shadow-sm ${isSaving ? "bg-blue-400 cursor-not-allowed" : "bg-blue-600 hover:bg-blue-700"}`}>
                   {isSaving ? <><Loader2 className="w-4 h-4 animate-spin" /> Kaydediliyor...</> : <><Save className="w-4 h-4" /> Kaydet</>}
                 </button>
 
-                {/* --- YENİ ÇIKIŞ BUTONU --- */}
-                <button 
-                  onClick={handleLogout}
-                  className="ml-2 p-2 text-red-500 hover:bg-red-50 rounded-md transition-colors"
-                  title="Çıkış Yap"
-                >
+                <button onClick={handleLogout} className="ml-2 p-2 text-red-500 hover:bg-red-50 rounded-md transition-colors" title="Çıkış Yap">
                   <LogOut className="w-5 h-5" />
                 </button>
             </div>
@@ -307,6 +320,7 @@ export default function PageBuilder() {
       </DragOverlay>
 
       <PageSettingsModal isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} settings={pageSettings} onUpdate={updatePageSettings} />
+      <LivePreviewModal isOpen={isPreviewOpen} onClose={() => setIsPreviewOpen(false)} items={items} />
     </DndContext>
   );
 }

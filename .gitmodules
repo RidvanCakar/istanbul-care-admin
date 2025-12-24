@@ -1,0 +1,3 @@
+[submodule "packages/elements"]
+	path = packages/elements
+	url = git@github.com:Istanbul-Care/elements.git

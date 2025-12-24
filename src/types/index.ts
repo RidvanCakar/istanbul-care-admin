@@ -9,7 +9,7 @@ export type ComponentType =
   | 'card' 
   | 'process' 
   | 'before_after' 
-  | 'contact_form' 
+  | 'contact_form'
   | 'slider'            
   | 'package'           
   | 'price_compare'     
@@ -17,6 +17,7 @@ export type ComponentType =
   | 'blog' 
   | 'service' 
   | 'social_media' 
+  | 'faq' 
   | 'review';
 
 // 3. Frontend State

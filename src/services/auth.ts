@@ -6,8 +6,8 @@ import { API_BASE_URL } from "./api";
 interface LoginPayload {
   email: string;
   password: string;
-  otp_code?: string;         // 2. adımda dolu olacak
-  otp_challenge_id?: string; // 2. adımda dolu olacak
+  otp_code?: string;         
+  otp_challenge_id?: string;
 }
 
 // API'den Dönen Cevap Modeli
@@ -17,7 +17,7 @@ interface LoginResponse {
   
   // Durum: 'otp_required' ise gelenler
   challenge_id?: string;
-  destination?: string; // Örn: r***7@gmail.com
+  destination?: string; 
   message?: string;
 
   // Durum: 'authenticated' ise gelenler

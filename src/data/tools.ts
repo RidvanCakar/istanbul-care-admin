@@ -10,11 +10,11 @@ import {
   Briefcase, 
   Share2, 
   Star,
-
-  Layers,          // Slider
-  ArrowRightLeft,  // Price Compare
-  Megaphone,       // Promotional Landing
-  Package          // Package 
+  Layers,          
+  ArrowRightLeft,  
+  Megaphone,       
+  Package,
+  MessageSquare 
 } from "lucide-react";
 
 export const TOOLS: { id: ComponentType; label: string; icon: any }[] = [
@@ -31,7 +31,7 @@ export const TOOLS: { id: ComponentType; label: string; icon: any }[] = [
   { id: 'price_compare', label: 'Price Compares', icon: ArrowRightLeft }, 
 
   // --- İletişim & Config ---
-  { id: 'contact_form', label: 'Contact Form', icon: Mail },
+  { id: 'contact_form', label: 'Contact Form (Full)', icon: Mail },       
   { id: 'blog', label: 'Blogs', icon: FileText },
   { id: 'service', label: 'Services', icon: Briefcase },
   { id: 'social_media', label: 'Social Media', icon: Share2 },
