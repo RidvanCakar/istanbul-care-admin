@@ -41,7 +41,7 @@ export const COMPONENT_REGISTRY: any = {
   hero: safeImport('Heroes'),        
   
   // Card -> "WhyChooseUs"
-  card: safeImport('WhyChooseUs'),   
+  card: safeImport('TestimonialGallery'),   
   
   // Slider -> "Sliders"
   slider: safeImport('TimelineSlider'),     
